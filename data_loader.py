@@ -8,11 +8,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 client = OpenAI(
-    api_key=os.getenv("GROK_API"),
-    base_url="https://api.x.ai/v1"
+    api_key=os.getenv("GEMINI_API"),
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
-EMBED_MODEL = "text-embedding-3-large"
+EMBED_MODEL = "text-embedding-004"
 EMBED_DIM = 3072
 splitter = SentenceSplitter(chunk_size=1000, chunk_overlap=200)
 
@@ -28,7 +28,8 @@ def load_chunk_pdf(path: str):
         chunks.extend(splitter.split_text(t))
     return chunks
 
-def embed_text(texts: list[str])-> list[list[float]]:
+
+def embed_text(texts: list[str]) -> list[list[float]]:
     response = client.embeddings.create(
         model=EMBED_MODEL,
         input=texts

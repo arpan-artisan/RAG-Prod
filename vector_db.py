@@ -1,9 +1,10 @@
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 
+
 class QdrantStorage:
     def __init__(self, url="http://localhost:6333", collection="docs", dim=3072):
-        self.client = QdrantClient(url=url,timeout=30)  #crashes if not connected in 30 sec
+        self.client = QdrantClient(url=url, timeout=30)  # crashes if not connected in 30 sec
         self.collection = collection
         if not self.client.collection_exists(self.collection):
             self.client.create_collection(
@@ -11,26 +12,26 @@ class QdrantStorage:
                 vectors_config=VectorParams(size=dim, distance=Distance.COSINE)
             )
 
-    #upsert means insert and update
-    def upsert(self,ids, vectors, payloads):
+    # upsert means insert and update
+    def upsert(self, ids, vectors, payloads):
         points = [PointStruct(id=ids[i], vector=vectors[i], payload=payloads[i]) for i in range(len(ids))]
-        self.client.upsert(self.collection,points=points)
+        self.client.upsert(self.collection, points=points)
 
-    def search(self, query_vector, top_k:int=5):
+    def search(self, query_vector, top_k: int = 5):
         results = self.client.search(
-            collection_name = self.collection,
-            query_vector= query_vector,
-            with_payload = True,
-            limit = top_k
+            collection_name=self.collection,
+            query_vector=query_vector,
+            with_payload=True,
+            limit=top_k
         )
 
         context = []
         sources = set()
 
         for r in results:
-            payload = getattr(r, "payload",None) or {}
-            text = payload.get("text","")
-            source = payload.get("source","")
+            payload = getattr(r, "payload", None) or {}
+            text = payload.get("text", "")
+            source = payload.get("source", "")
             if text:
                 context.append(text)
                 sources.append(source)

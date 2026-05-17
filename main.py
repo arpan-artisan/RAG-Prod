@@ -14,17 +14,16 @@ from custom_types import RAGQueryResults, RAGSearchResults, RAGUpsertResult, RAG
 load_dotenv()
 
 inngest_client = inngest.Inngest(
-    app_id
-    ="rag_app",
+    app_id="rag_app",
     logger=logging.getLogger("uvicorn"),
-    is_production=False,  #in production we need more security
+    is_production=False,  # in production we need more security
     serializer=inngest.PydanticSerializer()
 )
 
 
 @inngest_client.create_function(
-    fn_id = "RAG: Ingest PDF",
-    trigger = inngest.TriggerEvent(event="rag/ingest_pdf")
+    fn_id="RAG: Ingest PDF",
+    trigger=inngest.TriggerEvent(event="rag/ingest_pdf")
 )
 async def rag_ingest_pdf(ctx: inngest.Context):
     def _load(ctx: inngest.Context) -> RAGChunkAndSrc:
@@ -48,23 +47,24 @@ async def rag_ingest_pdf(ctx: inngest.Context):
 
     chunks_and_src = await ctx.step.run("load-and-chunk", lambda: _load(ctx), output_type=RAGChunkAndSrc)
     ingested = await ctx.step.run("embed-and-upsert", lambda: _upsert(chunks_and_src), output_type=RAGUpsertResult)
-    return ingested.model_dump()  #takes pydantic model and converts it into json or object
+    return ingested.model_dump()  # takes pydantic model and converts it into json or object
+
 
 @inngest_client.create_function(
-    fn_id = "RAG: Query PDF",
-    trigger = inngest.TriggerEvent(event="rag/query_pdf_ai")
+    fn_id="RAG: Query PDF",
+    trigger=inngest.TriggerEvent(event="rag/query_pdf_ai")
 )
 async def rag_query_pdf_ai(ctx: inngest.Context):
-    def _search(question : str, top_k = 5)->RAGSearchResults:
+    def _search(question: str, top_k=5) -> RAGSearchResults:
         query_vector = embed_text([question])[0]
         store = QdrantStorage()
         found = store.search(query_vector, top_k)
-        return RAGSearchResults(contexts= found["contexts"], sources=found["sources"])
+        return RAGSearchResults(contexts=found["contexts"], sources=found["sources"])
 
     question = ctx.event.data["question"]
-    top_k = ctx.event.data.get("top_k",5)
+    top_k = ctx.event.data.get("top_k", 5)
 
-    found = await ctx.step.run("embed-and-search",lambda: _search(question,top_k), output_type=RAGSearchResults)
+    found = await ctx.step.run("embed-and-search", lambda: _search(question, top_k), output_type=RAGSearchResults)
 
     context_block = "\n\n".join(f"- {c}" for c in found.contexts)
     user_content = (
@@ -85,19 +85,20 @@ async def rag_query_pdf_ai(ctx: inngest.Context):
         body={
             "max_tokens": 1024,
             "temperature": 0.2,
-            "messages":[{
+            "messages": [{
                 "role": "system",
                 "content": "You answer question using only the context provided"
-            },{
-                "role":"system",
-                "content":user_content
+            }, {
+                "role": "system",
+                "content": user_content
             }
             ]
         }
     )
 
     ans = res["choices"][0]["message"]["content"].strip()
-    return {"answer": ans, "sources":found.sources, "num_context": len(found.contexts)}
+    return {"answer": ans, "sources": found.sources, "num_context": len(found.contexts)}
+
 
 app = FastAPI()
 
