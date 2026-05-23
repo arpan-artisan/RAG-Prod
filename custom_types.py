@@ -7,11 +7,11 @@ class RAGChunkAndSrc(pydantic.BaseModel):
 
 
 class RAGUpsertResult(pydantic.BaseModel):
-    inngested: int
+    ingested: int
 
 
 class RAGSearchResults(pydantic.BaseModel):
-    context: list[str]
+    contexts: list[str]
     sources: list[str]
 
 
