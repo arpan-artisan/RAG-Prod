@@ -15,7 +15,7 @@ load_dotenv()
 
 
 def _gemini_api_key() -> str:
-    api_key = os.getenv("GEMINI_API") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    api_key = os.getenv("GEMINI_API")
     if not api_key:
         raise RuntimeError("Missing Gemini API key. Set GEMINI_API in .env.")
     return api_key
